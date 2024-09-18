@@ -22,12 +22,12 @@ def bifiltration(name, percentages, method,\
     from scipy import stats
     from loader import load_raw, load_filt
     from misc import make_path, headfolder, default_maxedge, default_minpers, fmt, dpi, fsize
-    from filter import filt_raw_kde, filt_raw_speed, filt_raw_eofbins
+    from filter import filt_raw_kde, filt_raw_speed, filt_raw_eofbins, filt_raw_centrality, filt_raw_min
     from compute import compute_homology
 
 
     #Only support these 3 options for now
-    assert method in ['GaussianKDE', 'EOFbinmeans', 'PhaseSpeed']
+    assert method in ['GaussianKDE', 'EOFbinmeans', 'PhaseSpeed', 'Centrality', 'Min']
     
 
     #Fix some basics
@@ -165,6 +165,16 @@ def bifiltration(name, percentages, method,\
             if method == 'GaussianKDE':
                 filt_raw_kde(name, perc_to_keep=perc, num_bins=num_bins, reverse_order=reverse,\
                              normalise=normalise, use_eofs=eofs, identifier=identifier, overwrite=overwrite)
+                             
+                             
+            elif method == 'Centrality':
+                filt_raw_centrality(name, perc_to_keep=perc, num_bins=num_bins, reverse_order=reverse,\
+                             normalise=normalise, use_eofs=eofs, identifier=identifier, overwrite=overwrite)
+            elif method == 'Min':
+                filt_raw_min(name, perc_to_keep=perc, num_bins=num_bins, reverse_order=reverse,\
+                             normalise=normalise, use_eofs=eofs, identifier=identifier, overwrite=overwrite)
+                             
+                             
             elif method == 'EOFbinmeans':
                 filt_raw_eofbins(name, perc_to_keep=perc, num_bins=num_bins, num_hist_dims=3,\
                                  max_num=20000, batch_max=2000, subsample_rate=2,\
@@ -250,7 +260,7 @@ def main(args=None):
 
     parser.add_argument("name", metavar="DATANAME", type=str, help="Name of your dataset (as defined in loader.py)")
     parser.add_argument("--percs", metavar="Filtvals", default='default', choices=['default', 'minimal', 'low', 'fine', 'manual'], help="Choice of density filtration percentages.")
-    parser.add_argument("--method", type=str, default='kernel', choices=['kernel', 'bins', 'speed'], help="How to do the density filtering.")
+    parser.add_argument("--method", type=str, default='kernel', choices=['kernel', 'bins', 'speed', 'centrality', 'min'], help="How to do the density filtering.")
     parser.add_argument("--eofs", action='store_true', help="Change of basis to EOF space.")
     parser.add_argument("--reverse", action='store_true', help="Reverse order of density filtration.")
     parser.add_argument("--overwrite", action='store_true', help="Force overwrite any existing filtered data.")
@@ -275,6 +285,13 @@ def main(args=None):
 
     if args.method == 'kernel':
         method = 'GaussianKDE'
+    
+    elif args.method == 'centrality':
+        method = 'Centrality'
+        
+    elif args.method == 'min':
+        method = 'Min'
+
     elif args.method == 'bins':
         method = 'EOFbinmeans'
     else:

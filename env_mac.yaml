@@ -1,11 +1,16 @@
 name: pholo
 channels:
-  - defaults
   - conda-forge
+  - defaults
 dependencies:
-  - python=3.8.1
-  - gudhi=3.1.1
-  - matplotlib
+  - python=3.8
+  - pip
+  - numpy
   - scipy
-  - eofs
-prefix: pholo
+  - matplotlib
+  - gudhi
+  - cython
+  - scikit-learn
+  - h5py
+  - tqdm
+

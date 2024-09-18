@@ -26,7 +26,7 @@ def load_raw(name, useall=False):
         if useall:
             data = (np.load(fname).T)
         else:
-            data = (np.load(fname).T)[:,10000:10000+100000]
+            data = (np.load(fname).T)[:,10000:10000+10000]
     
     elif name == 'Lorenz96':
         fname = '%s/Lorenz96/lorenz96_raw.txt' % datadir

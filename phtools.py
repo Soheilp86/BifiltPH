@@ -66,6 +66,8 @@ def oldest_components(data, filt, barcode, N):
     datalength = data.shape[-1]
     print(" Datalength = %s" % datalength)
 
+    filt = list(filt)  # Convert the generator to a list
+
     filt_vals = np.array([filt[n][1] for n in range(len(filt))]) #--- OLD 3.1.1 version
     death_times = []
     for component in barcode:
