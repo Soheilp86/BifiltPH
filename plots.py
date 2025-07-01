@@ -858,6 +858,25 @@ def density_histogram(name, percentages, max_edge=None, min_pers=None, sparse=0.
 
     #Get the raw data and compute the density
     data = loader.load_raw(name)
+    
+    # Compute distance matrix
+    dist_matrix = distance_matrix(data.T, data.T)  # shape: (n, n)
+    
+    # Select density method
+    if method == 'GaussianKDE':
+        kde = stats.gaussian_kde(data)
+        density = kde(data)
+    
+    elif method == 'centrality':
+        density = np.sqrt(np.mean(dist_matrix**2, axis=1))
+    
+    elif method == 'min':
+        dist_matrix[dist_matrix == 0] = np.inf
+        density = np.min(dist_matrix, axis=1)
+    
+    else:
+        raise ValueError(f"Unknown method '{method}'. Choose from 'GaussianKDE', 'centrality', or 'min'.")
+    
     kde = stats.gaussian_kde(data)
     density = kde(data)
 

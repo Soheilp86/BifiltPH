@@ -13,9 +13,15 @@ Random stuff which is useful
 
 
 #Top level directory of code
-headfolder  = os.path.dirname(os.path.realpath(__file__))
-persloopfolder = "~/Persloop-viewer/bin/src/" 
-assert persloopfolder is not None, "Please specify persloop location"
+#headfolder  = os.path.dirname(os.path.realpath(__file__))
+#persloopfolder = os.path.expanduser("~/Persloop-viewer/persloop-src-all-dim/build")
+#assert persloopfolder is not None, "Please specify persloop location"
+
+
+headfolder = os.path.dirname(os.path.realpath(__file__))
+persloopfolder = os.path.expanduser("~/Documents/Github/Persloop-viewer/bin/src")
+assert os.path.exists(os.path.join(persloopfolder, "persloop")), "Persloop binary not found!"
+
 
 
 #Format and dpi of figures

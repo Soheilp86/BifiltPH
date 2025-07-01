@@ -8,6 +8,7 @@ import gudhi as gd
 import numpy as np
 import sys
 from misc import persloopfolder
+import os
 
 peps = 10**(-7)
 threeD = True
@@ -383,15 +384,23 @@ def rmfloops(nme):
 def runpersloop(nme):
     #Execute persloop, to be run after proc4persloop
     import subprocess
+    from misc import persloopfolder
   
     print(' Starting persloop routine')
     rmfloops(nme)
+    
     if threeD:
         exc = f"{persloopfolder}/persloop"
     else:
         #This should be the version of persloop compiled
         #from persloop-src-all-dim
         exc = f"{persloopfolder}/persloop-src-all-dim/build/persloop"
+        
+        
+    # Print the full path to confirm it's expanded
+    print(f"Executable path being used: {exc}")
+    print(f"Does it exist? {os.path.exists(exc)}")
+    
     command = '%s -f %sf.txt -s %spers'%(exc,nme,nme)
     print(' Executing: %s'%command)
     result = subprocess.check_output([command], stderr=subprocess.STDOUT,shell=True)
