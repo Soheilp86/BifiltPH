@@ -16,6 +16,8 @@ from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from misc import make_path, default_maxedge, default_minpers, headfolder, fmt, dpi, fsize
 import loader
+from scipy.spatial import distance_matrix
+
 
 
 '''
@@ -298,6 +300,7 @@ def phasespace_points(name, eofs=False, dims=[0,1,2], cb=True, save=True):
         plt.show()
 
 
+########################################################
 
 #Plot of filtered phase space with and without loops overlaid on top
 def phasespace_loops(name, dims=[0,1,2], num2show=2, max_edge=None, min_pers=None, sparse=0.7, pre_sparse=None,\
@@ -429,7 +432,8 @@ def phasespace_loops(name, dims=[0,1,2], num2show=2, max_edge=None, min_pers=Non
 
 
     #Filtered phase space by itself
-    ax1 = plt.subplot(121, projection = '3d')
+    #ax1 = plt.subplot(121, projection = '3d')
+    ax1 = fig.add_subplot(121, projection='3d')
     plot_3d_generic(normdata[d0,:], normdata[d1,:], normdata[d2,:],\
                     ax1,\
                     label=None,\
@@ -471,6 +475,9 @@ def phasespace_loops(name, dims=[0,1,2], num2show=2, max_edge=None, min_pers=Non
         col = loop_colors[i]
         l = loop_list[i]
         ax2.plot(l[:,d0], l[:,d1], l[:,d2], color=col, alpha=1., linewidth=3.0)
+        ax2.scatter(l[:, d0], l[:, d1], l[:, d2],
+                        color=col, s=5, zorder=10)
+
 
 
 
@@ -496,7 +503,7 @@ def phasespace_loops(name, dims=[0,1,2], num2show=2, max_edge=None, min_pers=Non
     else:
         plt.show()
 
-
+########################################################
 
 
 #Plot of phase space with the N longest lived components coloured in
@@ -867,29 +874,30 @@ def density_histogram(name, percentages, max_edge=None, min_pers=None, sparse=0.
         kde = stats.gaussian_kde(data)
         density = kde(data)
     
-    elif method == 'centrality':
+    elif method == 'Centrality':
         density = np.sqrt(np.mean(dist_matrix**2, axis=1))
     
-    elif method == 'min':
+    elif method == 'Min':
         dist_matrix[dist_matrix == 0] = np.inf
         density = np.min(dist_matrix, axis=1)
+        
+    elif method == 'Max':
+        density = np.max(dist_matrix, axis=1)
     
     else:
-        raise ValueError(f"Unknown method '{method}'. Choose from 'GaussianKDE', 'centrality', or 'min'.")
+        raise ValueError(f"Unknown method '{method}'. Choose from 'GaussianKDE', 'centrality', 'min', or 'max'.")
     
-    kde = stats.gaussian_kde(data)
-    density = kde(data)
 
 
-    #Prepare figure and plot
+#Prepare figure and plot
     percentiles = [np.percentile(density, percentages[n]) for n in range(len(percentages))]
     percentile_labels = [str(percentages[n]) for n in range(len(percentages))]
 
     fig = plt.figure(figsize=fsize)
     ax = fig.add_subplot(111)
-    plt.hist(density, facecolor='g', density=True)
+    plt.hist(density, facecolor='g', density=False)
     plt.xlabel('Percentiles')
-    plt.ylabel('Density')
+    plt.ylabel('Counts')
     plt.title('%s density histogram' % name)
     plt.xticks(percentiles, percentile_labels)
     plt.tight_layout()

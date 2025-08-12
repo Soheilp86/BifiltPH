@@ -50,6 +50,13 @@ def load_raw(name, useall=False):
         pc0 /= pc0.std()
         pc1 /= pc1.std()
         data = np.vstack([lats, pc0, pc1])
+        
+    elif name == 'NAZ500':
+        fname = '%s/NAZ500/NAZ500.npy' % datadir
+        if useall:
+            data= np.loadtxt(fname)[:,:200000]
+        else:
+            data= np.loadtxt(fname)[:,:20000]
    
     elif name == 'Gaussian':
         fname = '%s/Gaussian/gaussian_raw.txt' % datadir

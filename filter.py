@@ -445,7 +445,7 @@ def filt_raw_speed(name, perc_to_keep, identifier=None,\
 #Filter phase space using a Centrality Function
 def filt_raw_centrality(name, perc_to_keep, identifier=None,\
                  num_bins=120, max_num=20000, use_eofs=False,\
-                 normalise=True, reverse_order=True, overwrite=False):
+                 normalise=True, reverse_order=False, overwrite=False):
 
 
     #Load the raw data: note that load_raw will return data in
@@ -538,17 +538,18 @@ def filt_raw_centrality(name, perc_to_keep, identifier=None,\
 
         #Centrality Function
         dist_matrix = distance_matrix(X.T,X.T)
-        centrality_values = np.mean(dist_matrix ** 2, axis=1) ** 0.5
         
-        #Take the perc_to_keep percentile of the density
-        percentile = np.percentile(centrality_values, 100-perc_to_keep)
-
+        centrality_values = np.sqrt(np.mean(dist_matrix ** 2, axis=1))
+        max_f = np.max(centrality_values)
+        centrality_values = max_f - centrality_values
+        
         if reverse_order:
             percentile = np.percentile(centrality_values, perc_to_keep)
             print("(filt_raw) WARNING: reverse_order = True")
-            inds = np.argwhere(centrality_values < percentile)[:,0] #<----This gives you the (100-perc_to_keep) LEAST dense points, i.e. outliers etc.
+            inds = np.argwhere(centrality_values < percentile)[:,0] #<----This gives you the (perc_to_keep) MOST dense points, i.e. outliers etc.
         else:
-            inds = np.argwhere(centrality_values > percentile)[:,0] #<----This gives you the (100-perc_to_keep) MOST dense points
+            percentile = np.percentile(centrality_values, 100-perc_to_keep)
+            inds = np.argwhere(centrality_values > percentile)[:,0] #<----This gives you the (100-perc_to_keep) LEAST dense points
 
         Xfiltered = X[:,inds]
 
@@ -665,6 +666,8 @@ def filt_raw_min(name, perc_to_keep, identifier=None,\
 
         # Compute the minimum of the nonzero entries
         min_values = np.min(dist_matrix, axis=1)
+        max_f = np.max(min_values)
+        min_values = max_f - min_values
         
         #Take the perc_to_keep percentile of the density
         percentile = np.percentile(min_values, 100-perc_to_keep)
@@ -688,3 +691,126 @@ def filt_raw_min(name, perc_to_keep, identifier=None,\
     print(100*'=')
 
  
+
+#Filter phase space using min Function
+def filt_raw_max(name, perc_to_keep, identifier=None,\
+                 num_bins=120, max_num=20000, use_eofs=False,\
+                 normalise=True, reverse_order=True, overwrite=False):
+
+
+    #Load the raw data: note that load_raw will return data in
+    #the correct shape
+    X = load_raw(name)
+    shape_before = X.shape
+
+
+    print(100*'=')
+    print("(filt_raw) Dataset = %s" % name)
+    print("(filt_raw) Current shape = %s" % (shape_before,))
+    print("(filt_raw) Keeping densest %s percent of data" % perc_to_keep)
+
+    #Determine filename and check if the filtered data already exists.
+    #If it does, return, unless overwrite=True
+    outdir = headfolder+'/Data/Filtered/%s' % name
+    make_path(outdir)
+
+    method = 'Max'
+    if use_eofs:
+        method += '_EOFs'
+
+    if identifier is None:
+        if reverse_order:
+            outname = '%s/%s_filtered_leastdense_%s_percent_%sbins_%s.txt' % (outdir, name, perc_to_keep, num_bins, method)
+        else:
+            outname = '%s/%s_filtered_densest_%s_percent_%sbins_%s.txt' % (outdir, name, perc_to_keep, num_bins, method)
+    else:
+        if reverse_order:
+            outname = '%s/%s_filtered_leastdense_%s_percent_%sbins_%s_%s.txt' % (outdir, name, perc_to_keep, num_bins, method, identifier)
+        else:
+            outname = '%s/%s_filtered_densest_%s_percent_%sbins_%s_%s.txt' % (outdir, name, perc_to_keep, num_bins, method, identifier)
+    
+    
+    if os.path.isfile(outname):
+        if overwrite:
+            print("(filt_raw) Filtered data already exists. Overwriting...")
+        else:
+            print("(filt_raw) Filtered data already exists. Returning!")
+            return
+    else:
+        pass
+    
+   
+    #Switch to an EOF basis?
+    if use_eofs:
+        print("(filt_raw) Converting data to EOF space...")
+        from eofs.standard import Eof
+        if name == 'Lorenz96':
+            num_pcs = 4
+            EOFs=Eof(X.T)
+            X=EOFs.pcs(npcs=num_pcs).T
+        else:
+            num_pcs = 3
+            EOFs=Eof(X.T)
+            X=EOFs.pcs(npcs=num_pcs).T
+        print("(filt_raw) PCs computed. Proceeding")
+
+
+    #Normalise dimensions
+    if normalise:
+        print("(filt_raw) Normalising dimensions.")
+        if name == 'Lorenz96':
+            X0 = X[0,:]
+            X1 = X[1,:]
+            X2 = X[2,:]
+            X3 = X[3,:]
+            X0 /= X0.std()
+            X1 /= X1.std()
+            X2 /= X2.std()
+            X3 /= X3.std()
+            X = np.vstack([X0,X1,X2,X3])
+        else:
+            X0 = X[0,:]
+            X1 = X[1,:]
+            X2 = X[2,:]
+            X0 /= X0.std()
+            X1 /= X1.std()
+            X2 /= X2.std()
+            X = np.vstack([X0,X1,X2])
+
+
+    #If you've asked for all the data then that's easy
+    if (perc_to_keep == 100) or (perc_to_keep is None):
+        Xfiltered = X
+
+    else:
+
+        L=X.shape[1]
+
+        #min Function
+        dist_matrix = distance_matrix(X.T,X.T)
+
+        # Compute the minimum of the nonzero entries
+        max_values = np.max(dist_matrix, axis=1)
+        max_f = np.max(max_values)
+        min_values = max_f - max_values
+        
+        #Take the perc_to_keep percentile of the density
+        percentile = np.percentile(min_values, 100-perc_to_keep)
+
+        if reverse_order:
+            percentile = np.percentile(min_values, perc_to_keep)
+            print("(filt_raw) WARNING: reverse_order = True")
+            inds = np.argwhere(min_values < percentile)[:,0] #<----This gives you the (100-perc_to_keep) LEAST dense points, i.e. outliers etc.
+        else:
+            inds = np.argwhere(min_values > percentile)[:,0] #<----This gives you the (100-perc_to_keep) MOST dense points
+
+        Xfiltered = X[:,inds]
+
+
+
+    #Saving output
+    shape_after = Xfiltered.shape
+    np.savetxt(outname, Xfiltered)
+    print("(filt_raw) New data shape = %s" % (shape_after,))
+    print("(filt_raw) Output saved to: %s" % outname)
+    print(100*'=')

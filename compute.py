@@ -35,7 +35,7 @@ and any additional local density/dimension computations we might want to add.
 def compute_homology(name,\
                      max_edge=None,\
                      min_pers=None,\
-                     sparse=0.7,\
+                     sparse=0.5,\
                      pre_sparse=None,\
                      method='GaussianKDE',\
                      identifier=None,\

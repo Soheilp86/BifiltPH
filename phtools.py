@@ -8,9 +8,8 @@ import gudhi as gd
 import numpy as np
 import sys
 from misc import persloopfolder
-import os
 
-peps = 10**(-7)
+peps = 10**(-10)
 threeD = True
 assert threeD  #PersLoop is not reliable or stable for dimensions>3
 
@@ -60,25 +59,22 @@ def get_components(generators):
 #Input is a simplex tree object (filt) and its corresponding barcode
 def oldest_components(data, filt, barcode, N):
     
-    print(100*'-')
+    print(100 * '-')
     print('       CONNECTED COMPONENTS:')
     
-    #Get number of time indices
+    # Get number of time indices
     datalength = data.shape[-1]
     print(" Datalength = %s" % datalength)
-
-    filt = list(filt)  # Convert the generator to a list
-
-    filt_vals = np.array([filt[n][1] for n in range(len(filt))]) #--- OLD 3.1.1 version
+    
+    filt_list = list(filt)  # Convert generator to list
+    filt_vals = np.array([filt_list[n][1] for n in range(len(filt_list))])
     death_times = []
     for component in barcode:
         if component[0] == 0: #we only want deathtimes of components (=H0, hence the 0 value)
             deathtime = component[1][1]
             death_times.append(deathtime)
-       
-
     #If there are <N components to pick from then just take all of them
-    if (len(death_times)<N):
+    if len(death_times) < N:
         print(" Less components available than what was asked for. Redefining N.")
         N = len(death_times)
     
@@ -93,17 +89,18 @@ def oldest_components(data, filt, barcode, N):
     filt0 = 0.
     print(' Looking at filtration values between %s and %s' % (filt1, filt0))
     generators_between = []
-    for n in range(len(filt)):
-        if (filt1>filt_vals[n]>filt0) and (len(filt[n][0]) > 1):
-            generators_between.append(filt[n][0])
-    
-   
+    for n in range(len(filt_list)):
+        if (filt1 > filt_list[n][1] > filt0) and (len(filt_list[n][0]) > 1):
+            generators_between.append(filt_list[n][0])
 
+
+
+    
     #Get the first guess of connected components
     print(" ...building initial set of components from Gudhi generators...")
     components = get_components(generators_between)
-   
-    
+
+
     #Now add in all points within a ball of radius death_time around each generator of these components,
     #and each point within a ball of radius death_time around each of these new points, etc.,
     #recursively until you've exhausted all points in your dataset
@@ -123,10 +120,10 @@ def oldest_components(data, filt, barcode, N):
     M = len(missing_points)
 
     print(" Missing points: %s" % M)
-    
+
     if M == 0:
         print(" All components found!")
-    
+        
         #We also want the number of points of each component
         comp_sizes = []
         for comp in components:
@@ -136,7 +133,7 @@ def oldest_components(data, filt, barcode, N):
         return components, death_times, comp_sizes
     else:
         pass
-    
+        
     print(" ...searching for singletons...")
     
     #First find singletons. These are points that are >maximum_radius radius away from any other point
@@ -180,7 +177,7 @@ def oldest_components(data, filt, barcode, N):
                 missing_points.pop(missing_points.index(m))
                 M -= 1
             cnter += 1
-   
+            
     if cnter == 20:
         print(" WARNING: Counter reached its limit!!")
         print(" Proceeding anyway...")
@@ -195,7 +192,7 @@ def oldest_components(data, filt, barcode, N):
     
     components_clean = components
     #components = components_clean
-    
+
     #We also want the number of points of each component
     comp_sizes = []
     for comp in components:
@@ -255,7 +252,8 @@ def proc4persloop(data,nme,num_comp_to_keep=10,max_edge=10,min_pers=1,sparse=Non
     print(' Barcodes done')
     print('   Printing loops:')
     loop_births, loop_deaths = printloops(BarCodes_Rips0)
-    Filt = Rips_simplex_tree.get_filtration() #--- OLD VERSION: 3.1.1.
+    Filt = Rips_simplex_tree.get_filtration()#--- OLD VERSION: 3.1.1.
+    Filt = list(Filt)
     #Filt = Rips_simplex_tree.get_filtration().__next__() #COMPATIBLE WITH 3.9 version
     print(' Filtration gotten')
 
@@ -319,16 +317,23 @@ def proc4persloop(data,nme,num_comp_to_keep=10,max_edge=10,min_pers=1,sparse=Non
     #into barcodes indexed by events in the filtration
     #
     bcode = []
+    #Filt = Rips_simplex_tree.get_filtration()
+    Filt = list(Filt)  # Add this line to realize the generator
+    Filt = [f + (i,) for i, f in enumerate(Filt)]  # Add index as a third element
     with open(fmn,'w') as f:
         for l in BarCodes_Rips0:
+            #print("barcode is", l)
             if l[0] == 1:
                 birth_time = -1
                 if l[1][0] == 0.:
                     birth_time = 1
                 else:
+                    #print("l[1][0] = ", l[1][0])
                     bfound = False
+                
                     for ft in Filt:
                         if np.abs(l[1][0] - ft[1]) < peps:
+                            #?print("we have a match")
                             birth_time = ft[2]
                             bfound = True
                             break
@@ -384,23 +389,15 @@ def rmfloops(nme):
 def runpersloop(nme):
     #Execute persloop, to be run after proc4persloop
     import subprocess
-    from misc import persloopfolder
   
     print(' Starting persloop routine')
     rmfloops(nme)
-    
     if threeD:
         exc = f"{persloopfolder}/persloop"
     else:
         #This should be the version of persloop compiled
         #from persloop-src-all-dim
         exc = f"{persloopfolder}/persloop-src-all-dim/build/persloop"
-        
-        
-    # Print the full path to confirm it's expanded
-    print(f"Executable path being used: {exc}")
-    print(f"Does it exist? {os.path.exists(exc)}")
-    
     command = '%s -f %sf.txt -s %spers'%(exc,nme,nme)
     print(' Executing: %s'%command)
     result = subprocess.check_output([command], stderr=subprocess.STDOUT,shell=True)

@@ -22,12 +22,12 @@ def bifiltration(name, percentages, method,\
     from scipy import stats
     from loader import load_raw, load_filt
     from misc import make_path, headfolder, default_maxedge, default_minpers, fmt, dpi, fsize
-    from filter import filt_raw_kde, filt_raw_speed, filt_raw_eofbins, filt_raw_centrality, filt_raw_min
+    from filter import filt_raw_kde, filt_raw_speed, filt_raw_eofbins, filt_raw_centrality, filt_raw_min, filt_raw_max
     from compute import compute_homology
 
 
-    #Only support these 3 options for now
-    assert method in ['GaussianKDE', 'EOFbinmeans', 'PhaseSpeed', 'Centrality', 'Min']
+    #Only support these 6 options for now
+    assert method in ['GaussianKDE', 'EOFbinmeans', 'PhaseSpeed', 'Centrality', 'Min', 'Max']
     
 
     #Fix some basics
@@ -55,8 +55,8 @@ def bifiltration(name, percentages, method,\
             if normalise:
                 max_edge = 5.0
                 min_pers = 0.25
-                pre_sparse = 0.05
-                sparse = 0.7
+                pre_sparse= 0.05
+                sparse =  0.7
             else:
                 max_edge = 20.0
                 min_pers = 0.6
@@ -67,7 +67,7 @@ def bifiltration(name, percentages, method,\
                 max_edge = 5.0
                 min_pers = 0.25
                 pre_sparse = 0.05
-                sparse = 0.7
+                sparse =  0.7
             else:
                 max_edge = 20.0
                 min_pers = 0.6
@@ -86,8 +86,8 @@ def bifiltration(name, percentages, method,\
         if eofs:
             max_edge = 5.0
             min_pers = 0.25
-            pre_sparse = 0.05
-            sparse = 0.7
+            pre_sparse =0.05
+            sparse =  0.7
         else:
             max_edge = 5.0
             min_pers = 1.4
@@ -105,7 +105,7 @@ def bifiltration(name, percentages, method,\
     
 
     elif 'CDV' in name:
-        max_edge = 5.0
+        max_edge =5.0
         min_pers = 0.25
         min_pers = 0.5
         if method == 'PhaseSpeed':
@@ -172,6 +172,10 @@ def bifiltration(name, percentages, method,\
                              normalise=normalise, use_eofs=eofs, identifier=identifier, overwrite=overwrite)
             elif method == 'Min':
                 filt_raw_min(name, perc_to_keep=perc, num_bins=num_bins, reverse_order=reverse,\
+                             normalise=normalise, use_eofs=eofs, identifier=identifier, overwrite=overwrite)
+                             
+            elif method == 'Max':
+                filt_raw_max(name, perc_to_keep=perc, num_bins=num_bins, reverse_order=reverse,\
                              normalise=normalise, use_eofs=eofs, identifier=identifier, overwrite=overwrite)
                              
                              
@@ -260,7 +264,7 @@ def main(args=None):
 
     parser.add_argument("name", metavar="DATANAME", type=str, help="Name of your dataset (as defined in loader.py)")
     parser.add_argument("--percs", metavar="Filtvals", default='default', choices=['default', 'minimal', 'low', 'fine', 'manual'], help="Choice of density filtration percentages.")
-    parser.add_argument("--method", type=str, default='kernel', choices=['kernel', 'bins', 'speed', 'centrality', 'min'], help="How to do the density filtering.")
+    parser.add_argument("--method", type=str, default='kernel', choices=['kernel', 'bins', 'speed', 'centrality', 'min', 'max'], help="How to do the density filtering.")
     parser.add_argument("--eofs", action='store_true', help="Change of basis to EOF space.")
     parser.add_argument("--reverse", action='store_true', help="Reverse order of density filtration.")
     parser.add_argument("--overwrite", action='store_true', help="Force overwrite any existing filtered data.")
@@ -291,6 +295,9 @@ def main(args=None):
         
     elif args.method == 'min':
         method = 'Min'
+        
+    elif args.method == 'max':
+        method = 'Max'
 
     elif args.method == 'bins':
         method = 'EOFbinmeans'
